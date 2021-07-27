@@ -1,0 +1,62 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "subscriptionId": {
+            "type": "String"
+        },
+        "name": {
+            "type": "String"
+        },
+        "location": {
+            "type": "String"
+        },
+        "hostingPlanName": {
+            "type": "String"
+        },
+        "serverFarmResourceGroup": {
+            "type": "String"
+        },
+        "alwaysOn": {
+            "type": "Bool"
+        },
+        "currentStack": {
+            "type": "String"
+        },
+        "phpVersion": {
+            "type": "String"
+        },
+        "netFrameworkVersion": {
+            "type": "String"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2018-11-01",
+            "name": "[parameters('name')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [],
+            "tags": {
+                "az900demo": "azdemo"
+            },
+            "properties": {
+                "name": "[parameters('name')]",
+                "siteConfig": {
+                    "appSettings": [],
+                    "metadata": [
+                        {
+                            "name": "CURRENT_STACK",
+                            "value": "[parameters('currentStack')]"
+                        }
+                    ],
+                    "phpVersion": "[parameters('phpVersion')]",
+                    "netFrameworkVersion": "[parameters('netFrameworkVersion')]",
+                    "alwaysOn": "[parameters('alwaysOn')]"
+                },
+                "serverFarmId": "[concat('/subscriptions/', parameters('subscriptionId'),'/resourcegroups/', parameters('serverFarmResourceGroup'), '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]",
+                "clientAffinityEnabled": true
+            }
+        }
+    ]
+}

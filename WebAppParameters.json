@@ -1,0 +1,33 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "subscriptionId": {
+            "value": "b0da73fd-801f-442e-adb9-1d602678b82b"
+        },
+        "name": {
+            "value": "rafademoqa"
+        },
+        "location": {
+            "value": "East US"
+        },
+        "hostingPlanName": {
+            "value": "ASP-az900demo-a234"
+        },
+        "serverFarmResourceGroup": {
+            "value": "az900demo"
+        },
+        "alwaysOn": {
+            "value": true
+        },
+        "currentStack": {
+            "value": "dotnet"
+        },
+        "phpVersion": {
+            "value": "OFF"
+        },
+        "netFrameworkVersion": {
+            "value": "v2.0"
+        }
+    }
+}
