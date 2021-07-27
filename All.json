@@ -1,0 +1,1171 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "sites_rafademo_name": {
+            "defaultValue": "rafademo",
+            "type": "String"
+        },
+        "sites_rafademoqa_name": {
+            "defaultValue": "rafademoqa",
+            "type": "String"
+        },
+        "sites_rafademodev_name": {
+            "defaultValue": "rafademodev",
+            "type": "String"
+        },
+        "virtualMachines_vm01_name": {
+            "defaultValue": "vm01",
+            "type": "String"
+        },
+        "networkInterfaces_vm01894_name": {
+            "defaultValue": "vm01894",
+            "type": "String"
+        },
+        "publicIPAddresses_vm01_ip_name": {
+            "defaultValue": "vm01-ip",
+            "type": "String"
+        },
+        "serverfarms_ASP_az900demo_a234_name": {
+            "defaultValue": "ASP-az900demo-a234",
+            "type": "String"
+        },
+        "networkSecurityGroups_vm01_nsg_name": {
+            "defaultValue": "vm01-nsg",
+            "type": "String"
+        },
+        "virtualNetworks_az900demo_vnet_name": {
+            "defaultValue": "az900demo-vnet",
+            "type": "String"
+        },
+        "schedules_shutdown_computevm_vm01_name": {
+            "defaultValue": "shutdown-computevm-vm01",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('networkSecurityGroups_vm01_nsg_name')]",
+            "location": "australiaeast",
+            "tags": {
+                "az900demo": "azdemo"
+            },
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "RDP",
+                        "properties": {
+                            "protocol": "TCP",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "3389",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 300,
+                            "direction": "Inbound",
+                            "sourcePortRanges": [],
+                            "destinationPortRanges": [],
+                            "sourceAddressPrefixes": [],
+                            "destinationAddressPrefixes": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('publicIPAddresses_vm01_ip_name')]",
+            "location": "australiaeast",
+            "tags": {
+                "az900demo": "azdemo"
+            },
+            "sku": {
+                "name": "Basic",
+                "tier": "Regional"
+            },
+            "properties": {
+                "publicIPAddressVersion": "IPv4",
+                "publicIPAllocationMethod": "Dynamic",
+                "idleTimeoutInMinutes": 4,
+                "ipTags": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('virtualNetworks_az900demo_vnet_name')]",
+            "location": "australiaeast",
+            "tags": {
+                "az900demo": "azdemo"
+            },
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "10.0.0.0/16"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "default",
+                        "properties": {
+                            "addressPrefix": "10.0.0.0/24",
+                            "delegations": [],
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    }
+                ],
+                "virtualNetworkPeerings": [],
+                "enableDdosProtection": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2018-02-01",
+            "name": "[parameters('serverfarms_ASP_az900demo_a234_name')]",
+            "location": "East US",
+            "tags": {
+                "az900demo": "azdemo"
+            },
+            "sku": {
+                "name": "S1",
+                "tier": "Standard",
+                "size": "S1",
+                "family": "S",
+                "capacity": 1
+            },
+            "kind": "app",
+            "properties": {
+                "perSiteScaling": false,
+                "maximumElasticWorkerCount": 1,
+                "isSpot": false,
+                "reserved": false,
+                "isXenon": false,
+                "hyperV": false,
+                "targetWorkerCount": 0,
+                "targetWorkerSizeId": 0
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2021-03-01",
+            "name": "[parameters('virtualMachines_vm01_name')]",
+            "location": "australiaeast",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_vm01894_name'))]"
+            ],
+            "tags": {
+                "az900demo": "azdemo"
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B2s"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2019-datacenter-gensecond",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Windows",
+                        "name": "[concat(parameters('virtualMachines_vm01_name'), '_OsDisk_1_4c84d5ef7b344f5ea9212513a0cda2fe')]",
+                        "createOption": "FromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_vm01_name'), '_OsDisk_1_4c84d5ef7b344f5ea9212513a0cda2fe'))]"
+                        }
+                    },
+                    "dataDisks": []
+                },
+                "osProfile": {
+                    "computerName": "[parameters('virtualMachines_vm01_name')]",
+                    "adminUsername": "demouser",
+                    "windowsConfiguration": {
+                        "provisionVMAgent": true,
+                        "enableAutomaticUpdates": true,
+                        "patchSettings": {
+                            "patchMode": "AutomaticByOS",
+                            "assessmentMode": "ImageDefault",
+                            "enableHotpatching": false
+                        }
+                    },
+                    "secrets": [],
+                    "allowExtensionOperations": true,
+                    "requireGuestProvisionSignal": true
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_vm01894_name'))]"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "microsoft.devtestlab/schedules",
+            "apiVersion": "2018-09-15",
+            "name": "[parameters('schedules_shutdown_computevm_vm01_name')]",
+            "location": "australiaeast",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_vm01_name'))]"
+            ],
+            "tags": {
+                "az900demo": "azdemo"
+            },
+            "properties": {
+                "status": "Enabled",
+                "taskType": "ComputeVmShutdownTask",
+                "dailyRecurrence": {
+                    "time": "2230"
+                },
+                "timeZoneId": "AUS Eastern Standard Time",
+                "notificationSettings": {
+                    "status": "Enabled",
+                    "timeInMinutes": 30,
+                    "emailRecipient": "I.Banji@hotmail.com",
+                    "notificationLocale": "en"
+                },
+                "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_vm01_name'))]"
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "apiVersion": "2020-11-01",
+            "name": "[concat(parameters('networkSecurityGroups_vm01_nsg_name'), '/RDP')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_vm01_nsg_name'))]"
+            ],
+            "properties": {
+                "protocol": "TCP",
+                "sourcePortRange": "*",
+                "destinationPortRange": "3389",
+                "sourceAddressPrefix": "*",
+                "destinationAddressPrefix": "*",
+                "access": "Allow",
+                "priority": 300,
+                "direction": "Inbound",
+                "sourcePortRanges": [],
+                "destinationPortRanges": [],
+                "sourceAddressPrefixes": [],
+                "destinationAddressPrefixes": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2020-11-01",
+            "name": "[concat(parameters('virtualNetworks_az900demo_vnet_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_az900demo_vnet_name'))]"
+            ],
+            "properties": {
+                "addressPrefix": "10.0.0.0/24",
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2018-11-01",
+            "name": "[parameters('sites_rafademo_name')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_az900demo_a234_name'))]"
+            ],
+            "tags": {
+                "az900demo": "azdemo"
+            },
+            "kind": "app",
+            "properties": {
+                "enabled": true,
+                "hostNameSslStates": [
+                    {
+                        "name": "[concat(parameters('sites_rafademo_name'), '.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Standard"
+                    },
+                    {
+                        "name": "[concat(parameters('sites_rafademo_name'), '.scm.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Repository"
+                    }
+                ],
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_az900demo_a234_name'))]",
+                "reserved": false,
+                "isXenon": false,
+                "hyperV": false,
+                "siteConfig": {
+                    "numberOfWorkers": 1,
+                    "alwaysOn": true,
+                    "http20Enabled": false
+                },
+                "scmSiteAlsoStopped": false,
+                "clientAffinityEnabled": true,
+                "clientCertEnabled": false,
+                "hostNamesDisabled": false,
+                "containerSize": 0,
+                "dailyMemoryTimeQuota": 0,
+                "httpsOnly": false,
+                "redundancyMode": "None"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2018-11-01",
+            "name": "[parameters('sites_rafademodev_name')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_az900demo_a234_name'))]"
+            ],
+            "tags": {
+                "az900demo": "azdemo"
+            },
+            "kind": "app",
+            "properties": {
+                "enabled": true,
+                "hostNameSslStates": [
+                    {
+                        "name": "[concat(parameters('sites_rafademodev_name'), '.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Standard"
+                    },
+                    {
+                        "name": "[concat(parameters('sites_rafademodev_name'), '.scm.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Repository"
+                    }
+                ],
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_az900demo_a234_name'))]",
+                "reserved": false,
+                "isXenon": false,
+                "hyperV": false,
+                "siteConfig": {
+                    "numberOfWorkers": 1,
+                    "alwaysOn": true,
+                    "http20Enabled": false
+                },
+                "scmSiteAlsoStopped": false,
+                "clientAffinityEnabled": true,
+                "clientCertEnabled": false,
+                "hostNamesDisabled": false,
+                "containerSize": 0,
+                "dailyMemoryTimeQuota": 0,
+                "httpsOnly": false,
+                "redundancyMode": "None"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2018-11-01",
+            "name": "[parameters('sites_rafademoqa_name')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_az900demo_a234_name'))]"
+            ],
+            "tags": {
+                "az900demo": "azdemo"
+            },
+            "kind": "app",
+            "properties": {
+                "enabled": true,
+                "hostNameSslStates": [
+                    {
+                        "name": "[concat(parameters('sites_rafademoqa_name'), '.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Standard"
+                    },
+                    {
+                        "name": "[concat(parameters('sites_rafademoqa_name'), '.scm.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Repository"
+                    }
+                ],
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_az900demo_a234_name'))]",
+                "reserved": false,
+                "isXenon": false,
+                "hyperV": false,
+                "siteConfig": {
+                    "numberOfWorkers": 1,
+                    "alwaysOn": true,
+                    "http20Enabled": false
+                },
+                "scmSiteAlsoStopped": false,
+                "clientAffinityEnabled": true,
+                "clientCertEnabled": false,
+                "hostNamesDisabled": false,
+                "containerSize": 0,
+                "dailyMemoryTimeQuota": 0,
+                "httpsOnly": false,
+                "redundancyMode": "None"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademo_name'), '/web')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademo_name'))]"
+            ],
+            "tags": {
+                "az900demo": "azdemo"
+            },
+            "properties": {
+                "numberOfWorkers": 1,
+                "defaultDocuments": [
+                    "Default.htm",
+                    "Default.html",
+                    "Default.asp",
+                    "index.htm",
+                    "index.html",
+                    "iisstart.htm",
+                    "default.aspx",
+                    "index.php",
+                    "hostingstart.html"
+                ],
+                "netFrameworkVersion": "v4.0",
+                "requestTracingEnabled": false,
+                "remoteDebuggingEnabled": false,
+                "remoteDebuggingVersion": "VS2019",
+                "httpLoggingEnabled": false,
+                "logsDirectorySizeLimit": 35,
+                "detailedErrorLoggingEnabled": false,
+                "publishingUsername": "$rafademo",
+                "azureStorageAccounts": {},
+                "scmType": "None",
+                "use32BitWorkerProcess": true,
+                "webSocketsEnabled": false,
+                "alwaysOn": true,
+                "managedPipelineMode": "Integrated",
+                "virtualApplications": [
+                    {
+                        "virtualPath": "/",
+                        "physicalPath": "site\\wwwroot",
+                        "preloadEnabled": true
+                    }
+                ],
+                "loadBalancing": "LeastRequests",
+                "experiments": {
+                    "rampUpRules": []
+                },
+                "autoHealEnabled": false,
+                "localMySqlEnabled": false,
+                "ipSecurityRestrictions": [
+                    {
+                        "ipAddress": "Any",
+                        "action": "Allow",
+                        "priority": 1,
+                        "name": "Allow all",
+                        "description": "Allow all access"
+                    }
+                ],
+                "scmIpSecurityRestrictions": [
+                    {
+                        "ipAddress": "Any",
+                        "action": "Allow",
+                        "priority": 1,
+                        "name": "Allow all",
+                        "description": "Allow all access"
+                    }
+                ],
+                "scmIpSecurityRestrictionsUseMain": false,
+                "http20Enabled": false,
+                "minTlsVersion": "1.2",
+                "ftpsState": "AllAllowed",
+                "reservedInstanceCount": 0
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademodev_name'), '/web')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademodev_name'))]"
+            ],
+            "tags": {
+                "az900demo": "azdemo"
+            },
+            "properties": {
+                "numberOfWorkers": 1,
+                "defaultDocuments": [
+                    "Default.htm",
+                    "Default.html",
+                    "Default.asp",
+                    "index.htm",
+                    "index.html",
+                    "iisstart.htm",
+                    "default.aspx",
+                    "index.php",
+                    "hostingstart.html"
+                ],
+                "netFrameworkVersion": "v4.0",
+                "requestTracingEnabled": false,
+                "remoteDebuggingEnabled": false,
+                "remoteDebuggingVersion": "VS2019",
+                "httpLoggingEnabled": false,
+                "logsDirectorySizeLimit": 35,
+                "detailedErrorLoggingEnabled": false,
+                "publishingUsername": "$rafademodev",
+                "azureStorageAccounts": {},
+                "scmType": "VSTSRM",
+                "use32BitWorkerProcess": true,
+                "webSocketsEnabled": false,
+                "alwaysOn": true,
+                "managedPipelineMode": "Integrated",
+                "virtualApplications": [
+                    {
+                        "virtualPath": "/",
+                        "physicalPath": "site\\wwwroot",
+                        "preloadEnabled": true
+                    }
+                ],
+                "loadBalancing": "LeastRequests",
+                "experiments": {
+                    "rampUpRules": []
+                },
+                "autoHealEnabled": false,
+                "localMySqlEnabled": false,
+                "ipSecurityRestrictions": [
+                    {
+                        "ipAddress": "Any",
+                        "action": "Allow",
+                        "priority": 1,
+                        "name": "Allow all",
+                        "description": "Allow all access"
+                    }
+                ],
+                "scmIpSecurityRestrictions": [
+                    {
+                        "ipAddress": "Any",
+                        "action": "Allow",
+                        "priority": 1,
+                        "name": "Allow all",
+                        "description": "Allow all access"
+                    }
+                ],
+                "scmIpSecurityRestrictionsUseMain": false,
+                "http20Enabled": false,
+                "minTlsVersion": "1.2",
+                "ftpsState": "AllAllowed",
+                "reservedInstanceCount": 0
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademoqa_name'), '/web')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademoqa_name'))]"
+            ],
+            "tags": {
+                "az900demo": "azdemo"
+            },
+            "properties": {
+                "numberOfWorkers": 1,
+                "defaultDocuments": [
+                    "Default.htm",
+                    "Default.html",
+                    "Default.asp",
+                    "index.htm",
+                    "index.html",
+                    "iisstart.htm",
+                    "default.aspx",
+                    "index.php",
+                    "hostingstart.html"
+                ],
+                "netFrameworkVersion": "v2.0",
+                "requestTracingEnabled": false,
+                "remoteDebuggingEnabled": false,
+                "remoteDebuggingVersion": "VS2019",
+                "httpLoggingEnabled": false,
+                "logsDirectorySizeLimit": 35,
+                "detailedErrorLoggingEnabled": false,
+                "publishingUsername": "$rafademoqa",
+                "azureStorageAccounts": {},
+                "scmType": "VSTSRM",
+                "use32BitWorkerProcess": true,
+                "webSocketsEnabled": false,
+                "alwaysOn": true,
+                "managedPipelineMode": "Integrated",
+                "virtualApplications": [
+                    {
+                        "virtualPath": "/",
+                        "physicalPath": "site\\wwwroot",
+                        "preloadEnabled": true
+                    }
+                ],
+                "loadBalancing": "LeastRequests",
+                "experiments": {
+                    "rampUpRules": []
+                },
+                "autoHealEnabled": false,
+                "localMySqlEnabled": false,
+                "ipSecurityRestrictions": [
+                    {
+                        "ipAddress": "Any",
+                        "action": "Allow",
+                        "priority": 1,
+                        "name": "Allow all",
+                        "description": "Allow all access"
+                    }
+                ],
+                "scmIpSecurityRestrictions": [
+                    {
+                        "ipAddress": "Any",
+                        "action": "Allow",
+                        "priority": 1,
+                        "name": "Allow all",
+                        "description": "Allow all access"
+                    }
+                ],
+                "scmIpSecurityRestrictionsUseMain": false,
+                "http20Enabled": false,
+                "minTlsVersion": "1.2",
+                "ftpsState": "AllAllowed",
+                "reservedInstanceCount": 0
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademodev_name'), '/149c8a1af3df4c2db22c86e68351c775')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademodev_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"b2deae8647ea8cfa32859fd6c58930e156d0aeda\",\"buildId\":\"11\",\"releaseId\":\"5\",\"buildNumber\":\"20210724.5\",\"releaseName\":\"Release-5\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"buildProjectUrl\":\"https://dev.azure.com/IBanji/f07389c4-9a26-429a-9560-732fcbaa1209\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"HelloWorldApp Project\",\"slotName\":\"production\"}",
+                "start_time": "2021-07-24T09:51:47.2324318Z",
+                "end_time": "2021-07-24T09:51:47.5898108Z",
+                "active": true
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademo_name'), '/31627117889513')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademo_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author": "Oyebanji IKUYINMINU",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"SlotSwap\",\"commitId\":\"58a54a0c500e18027e6d0168b3974fca14236ad5\",\"buildId\":\"9\",\"releaseId\":\"3\",\"buildNumber\":\"20210724.3\",\"releaseName\":\"Release-3\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"sourceSlot\":\"rafademo-staging\",\"targetSlot\":\"production\"}",
+                "start_time": "2021-07-24T09:11:34.8396027Z",
+                "end_time": "2021-07-24T09:11:34.8396027Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademo_name'), '/41627119114258')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademo_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author": "Oyebanji IKUYINMINU",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"SlotSwap\",\"commitId\":\"ce08f42d7af34f64d67bc91d54b4593de88a80ea\",\"buildId\":\"10\",\"releaseId\":\"4\",\"buildNumber\":\"20210724.4\",\"releaseName\":\"Release-4\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"sourceSlot\":\"rafademo-staging\",\"targetSlot\":\"production\"}",
+                "start_time": "2021-07-24T09:31:56.1529629Z",
+                "end_time": "2021-07-24T09:31:56.1529629Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademo_name'), '/51627120586348')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademo_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author": "Oyebanji IKUYINMINU",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"SlotSwap\",\"commitId\":\"b2deae8647ea8cfa32859fd6c58930e156d0aeda\",\"buildId\":\"11\",\"releaseId\":\"5\",\"buildNumber\":\"20210724.5\",\"releaseName\":\"Release-5\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"sourceSlot\":\"rafademo-staging\",\"targetSlot\":\"production\"}",
+                "start_time": "2021-07-24T09:56:29.0179445Z",
+                "end_time": "2021-07-24T09:56:29.0179445Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademoqa_name'), '/534b22d4d3834d15aef09067ec6befe9')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademoqa_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"ce08f42d7af34f64d67bc91d54b4593de88a80ea\",\"buildId\":\"10\",\"releaseId\":\"4\",\"buildNumber\":\"20210724.4\",\"releaseName\":\"Release-4\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"buildProjectUrl\":\"https://dev.azure.com/IBanji/f07389c4-9a26-429a-9560-732fcbaa1209\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"HelloWorldApp Project\",\"slotName\":\"production\"}",
+                "start_time": "2021-07-24T09:26:58.9191298Z",
+                "end_time": "2021-07-24T09:26:59.3410463Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademodev_name'), '/5c568c6d96e84794ba3eeea59f964fd7')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademodev_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"89c995df5c9091b478bb1dd11f23bc4806f324d7\",\"buildId\":\"8\",\"releaseId\":\"2\",\"buildNumber\":\"20210724.2\",\"releaseName\":\"Release-2\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"buildProjectUrl\":\"https://dev.azure.com/IBanji/f07389c4-9a26-429a-9560-732fcbaa1209\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"HelloWorldApp Project\",\"slotName\":\"production\"}",
+                "start_time": "2021-07-24T08:32:15.4719013Z",
+                "end_time": "2021-07-24T08:32:15.909415Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademo_name'), '/6484497efa82424cad4db9541af84c6a')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademo_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"ce08f42d7af34f64d67bc91d54b4593de88a80ea\",\"buildId\":\"10\",\"releaseId\":\"4\",\"buildNumber\":\"20210724.4\",\"releaseName\":\"Release-4\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"buildProjectUrl\":\"https://dev.azure.com/IBanji/f07389c4-9a26-429a-9560-732fcbaa1209\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"HelloWorldApp Project\",\"slotName\":\"rafademo-staging\"}",
+                "start_time": "2021-07-24T09:32:16.570803Z",
+                "end_time": "2021-07-24T09:32:16.9458418Z",
+                "active": true
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademoqa_name'), '/9226254bec724de385456b830a3cb1b1')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademoqa_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"58a54a0c500e18027e6d0168b3974fca14236ad5\",\"buildId\":\"9\",\"releaseId\":\"3\",\"buildNumber\":\"20210724.3\",\"releaseName\":\"Release-3\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"buildProjectUrl\":\"https://dev.azure.com/IBanji/f07389c4-9a26-429a-9560-732fcbaa1209\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"HelloWorldApp Project\",\"slotName\":\"production\"}",
+                "start_time": "2021-07-24T09:08:16.3284614Z",
+                "end_time": "2021-07-24T09:08:16.7034263Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademodev_name'), '/b0f8cd6f80a440a0b75d89d3b83e8bd0')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademodev_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"89c995df5c9091b478bb1dd11f23bc4806f324d7\",\"buildId\":\"8\",\"releaseId\":\"1\",\"buildNumber\":\"20210724.2\",\"releaseName\":\"Release-1\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"buildProjectUrl\":\"https://dev.azure.com/IBanji/f07389c4-9a26-429a-9560-732fcbaa1209\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"HelloWorldApp Project\",\"slotName\":\"production\"}",
+                "start_time": "2021-07-24T08:30:57.3271123Z",
+                "end_time": "2021-07-24T08:30:57.716448Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademoqa_name'), '/b7ad8481feac406b8b1012de2fb5136f')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademoqa_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"b2deae8647ea8cfa32859fd6c58930e156d0aeda\",\"buildId\":\"11\",\"releaseId\":\"5\",\"buildNumber\":\"20210724.5\",\"releaseName\":\"Release-5\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"buildProjectUrl\":\"https://dev.azure.com/IBanji/f07389c4-9a26-429a-9560-732fcbaa1209\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"HelloWorldApp Project\",\"slotName\":\"production\"}",
+                "start_time": "2021-07-24T09:53:41.5027634Z",
+                "end_time": "2021-07-24T09:53:41.8633326Z",
+                "active": true
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademodev_name'), '/cb0b5478c33e441abc09a3f56395211b')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademodev_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"ce08f42d7af34f64d67bc91d54b4593de88a80ea\",\"buildId\":\"10\",\"releaseId\":\"4\",\"buildNumber\":\"20210724.4\",\"releaseName\":\"Release-4\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"buildProjectUrl\":\"https://dev.azure.com/IBanji/f07389c4-9a26-429a-9560-732fcbaa1209\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"HelloWorldApp Project\",\"slotName\":\"production\"}",
+                "start_time": "2021-07-24T09:25:20.0799145Z",
+                "end_time": "2021-07-24T09:25:20.4704665Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademodev_name'), '/e3d0b6f1609e45adb969841178c7ac80')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademodev_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"58a54a0c500e18027e6d0168b3974fca14236ad5\",\"buildId\":\"9\",\"releaseId\":\"3\",\"buildNumber\":\"20210724.3\",\"releaseName\":\"Release-3\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"buildProjectUrl\":\"https://dev.azure.com/IBanji/f07389c4-9a26-429a-9560-732fcbaa1209\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"HelloWorldApp Project\",\"slotName\":\"production\"}",
+                "start_time": "2021-07-24T09:03:47.2356096Z",
+                "end_time": "2021-07-24T09:03:47.6115655Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademo_name'), '/', parameters('sites_rafademo_name'), '.azurewebsites.net')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademo_name'))]"
+            ],
+            "properties": {
+                "siteName": "rafademo",
+                "hostNameType": "Verified"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademodev_name'), '/', parameters('sites_rafademodev_name'), '.azurewebsites.net')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademodev_name'))]"
+            ],
+            "properties": {
+                "siteName": "rafademodev",
+                "hostNameType": "Verified"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademoqa_name'), '/', parameters('sites_rafademoqa_name'), '.azurewebsites.net')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademoqa_name'))]"
+            ],
+            "properties": {
+                "siteName": "rafademoqa",
+                "hostNameType": "Verified"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/slots",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademo_name'), '/', parameters('sites_rafademo_name'), '-staging')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademo_name'))]",
+                "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_az900demo_a234_name'))]"
+            ],
+            "kind": "app",
+            "properties": {
+                "enabled": true,
+                "hostNameSslStates": [
+                    {
+                        "name": "rafademo-rafademo-staging.azurewebsites.net",
+                        "sslState": "Disabled",
+                        "hostType": "Standard"
+                    },
+                    {
+                        "name": "rafademo-rafademo-staging.scm.azurewebsites.net",
+                        "sslState": "Disabled",
+                        "hostType": "Repository"
+                    }
+                ],
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_az900demo_a234_name'))]",
+                "reserved": false,
+                "isXenon": false,
+                "hyperV": false,
+                "siteConfig": {
+                    "numberOfWorkers": 1,
+                    "alwaysOn": true,
+                    "http20Enabled": false
+                },
+                "scmSiteAlsoStopped": false,
+                "clientAffinityEnabled": true,
+                "clientCertEnabled": false,
+                "hostNamesDisabled": false,
+                "containerSize": 0,
+                "dailyMemoryTimeQuota": 0,
+                "httpsOnly": false,
+                "redundancyMode": "None"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/slots/config",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademo_name'), '/', parameters('sites_rafademo_name'), '-staging/web')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites/slots', parameters('sites_rafademo_name'), concat(parameters('sites_rafademo_name'), '-staging'))]",
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademo_name'))]"
+            ],
+            "properties": {
+                "numberOfWorkers": 1,
+                "defaultDocuments": [
+                    "Default.htm",
+                    "Default.html",
+                    "Default.asp",
+                    "index.htm",
+                    "index.html",
+                    "iisstart.htm",
+                    "default.aspx",
+                    "index.php",
+                    "hostingstart.html"
+                ],
+                "netFrameworkVersion": "v4.0",
+                "requestTracingEnabled": false,
+                "remoteDebuggingEnabled": false,
+                "remoteDebuggingVersion": "VS2019",
+                "httpLoggingEnabled": false,
+                "logsDirectorySizeLimit": 35,
+                "detailedErrorLoggingEnabled": false,
+                "publishingUsername": "$rafademo__rafademo-staging",
+                "azureStorageAccounts": {},
+                "scmType": "VSTSRM",
+                "use32BitWorkerProcess": true,
+                "webSocketsEnabled": false,
+                "alwaysOn": true,
+                "managedPipelineMode": "Integrated",
+                "virtualApplications": [
+                    {
+                        "virtualPath": "/",
+                        "physicalPath": "site\\wwwroot",
+                        "preloadEnabled": true
+                    }
+                ],
+                "loadBalancing": "LeastRequests",
+                "experiments": {
+                    "rampUpRules": []
+                },
+                "autoHealEnabled": false,
+                "localMySqlEnabled": false,
+                "ipSecurityRestrictions": [
+                    {
+                        "ipAddress": "Any",
+                        "action": "Allow",
+                        "priority": 1,
+                        "name": "Allow all",
+                        "description": "Allow all access"
+                    }
+                ],
+                "scmIpSecurityRestrictions": [
+                    {
+                        "ipAddress": "Any",
+                        "action": "Allow",
+                        "priority": 1,
+                        "name": "Allow all",
+                        "description": "Allow all access"
+                    }
+                ],
+                "scmIpSecurityRestrictionsUseMain": false,
+                "http20Enabled": false,
+                "minTlsVersion": "1.2",
+                "ftpsState": "AllAllowed",
+                "reservedInstanceCount": 0
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/slots/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademo_name'), '/', parameters('sites_rafademo_name'), '-staging/0bc86107bc274cec8517ec7c590f5da1')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites/slots', parameters('sites_rafademo_name'), concat(parameters('sites_rafademo_name'), '-staging'))]",
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademo_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"58a54a0c500e18027e6d0168b3974fca14236ad5\",\"buildId\":\"9\",\"releaseId\":\"3\",\"buildNumber\":\"20210724.3\",\"releaseName\":\"Release-3\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"buildProjectUrl\":\"https://dev.azure.com/IBanji/f07389c4-9a26-429a-9560-732fcbaa1209\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"HelloWorldApp Project\",\"slotName\":\"rafademo-staging\"}",
+                "start_time": "2021-07-24T09:11:50.5004609Z",
+                "end_time": "2021-07-24T09:11:50.8598338Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/slots/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademo_name'), '/', parameters('sites_rafademo_name'), '-staging/15fb43255f594531b9fbf0d250a72881')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites/slots', parameters('sites_rafademo_name'), concat(parameters('sites_rafademo_name'), '-staging'))]",
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademo_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"b2deae8647ea8cfa32859fd6c58930e156d0aeda\",\"buildId\":\"11\",\"releaseId\":\"5\",\"buildNumber\":\"20210724.5\",\"releaseName\":\"Release-5\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"buildProjectUrl\":\"https://dev.azure.com/IBanji/f07389c4-9a26-429a-9560-732fcbaa1209\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"HelloWorldApp Project\",\"slotName\":\"rafademo-staging\"}",
+                "start_time": "2021-07-24T09:56:37.1502381Z",
+                "end_time": "2021-07-24T09:56:37.5252358Z",
+                "active": true
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/slots/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademo_name'), '/', parameters('sites_rafademo_name'), '-staging/31627117889513')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites/slots', parameters('sites_rafademo_name'), concat(parameters('sites_rafademo_name'), '-staging'))]",
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademo_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author": "Oyebanji IKUYINMINU",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"SlotSwap\",\"commitId\":\"58a54a0c500e18027e6d0168b3974fca14236ad5\",\"buildId\":\"9\",\"releaseId\":\"3\",\"buildNumber\":\"20210724.3\",\"releaseName\":\"Release-3\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"sourceSlot\":\"rafademo-staging\",\"targetSlot\":\"production\"}",
+                "start_time": "2021-07-24T09:11:33.294569Z",
+                "end_time": "2021-07-24T09:11:33.294569Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/slots/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademo_name'), '/', parameters('sites_rafademo_name'), '-staging/41627119114258')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites/slots', parameters('sites_rafademo_name'), concat(parameters('sites_rafademo_name'), '-staging'))]",
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademo_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author": "Oyebanji IKUYINMINU",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"SlotSwap\",\"commitId\":\"ce08f42d7af34f64d67bc91d54b4593de88a80ea\",\"buildId\":\"10\",\"releaseId\":\"4\",\"buildNumber\":\"20210724.4\",\"releaseName\":\"Release-4\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"sourceSlot\":\"rafademo-staging\",\"targetSlot\":\"production\"}",
+                "start_time": "2021-07-24T09:31:57.6587997Z",
+                "end_time": "2021-07-24T09:31:57.6587997Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/slots/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademo_name'), '/', parameters('sites_rafademo_name'), '-staging/51627120586348')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites/slots', parameters('sites_rafademo_name'), concat(parameters('sites_rafademo_name'), '-staging'))]",
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademo_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author": "Oyebanji IKUYINMINU",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"SlotSwap\",\"commitId\":\"b2deae8647ea8cfa32859fd6c58930e156d0aeda\",\"buildId\":\"11\",\"releaseId\":\"5\",\"buildNumber\":\"20210724.5\",\"releaseName\":\"Release-5\",\"repoProvider\":\"TfsGit\",\"repoName\":\"HelloWorldApp Project\",\"collectionUrl\":\"https://dev.azure.com/IBanji/\",\"teamProject\":\"f07389c4-9a26-429a-9560-732fcbaa1209\",\"sourceSlot\":\"rafademo-staging\",\"targetSlot\":\"production\"}",
+                "start_time": "2021-07-24T09:56:27.4582686Z",
+                "end_time": "2021-07-24T09:56:27.4582686Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/slots/hostNameBindings",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_rafademo_name'), '/', parameters('sites_rafademo_name'), '-staging/', parameters('sites_rafademo_name'), '-', parameters('sites_rafademo_name'), '-staging.azurewebsites.net')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites/slots', parameters('sites_rafademo_name'), concat(parameters('sites_rafademo_name'), '-staging'))]",
+                "[resourceId('Microsoft.Web/sites', parameters('sites_rafademo_name'))]"
+            ],
+            "properties": {
+                "siteName": "rafademo(rafademo-staging)",
+                "hostNameType": "Verified"
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('networkInterfaces_vm01894_name')]",
+            "location": "australiaeast",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_vm01_ip_name'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_az900demo_vnet_name'), 'default')]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_vm01_nsg_name'))]"
+            ],
+            "tags": {
+                "az900demo": "azdemo"
+            },
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAddress": "10.0.0.4",
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_vm01_ip_name'))]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_az900demo_vnet_name'), 'default')]"
+                            },
+                            "primary": true,
+                            "privateIPAddressVersion": "IPv4"
+                        }
+                    }
+                ],
+                "dnsSettings": {
+                    "dnsServers": []
+                },
+                "enableAcceleratedNetworking": false,
+                "enableIPForwarding": false,
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_vm01_nsg_name'))]"
+                }
+            }
+        }
+    ]
+}
